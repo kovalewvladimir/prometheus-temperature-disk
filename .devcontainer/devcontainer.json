@@ -6,13 +6,14 @@
 	},
 	"runArgs": [
 		"-p=9586:9586",
-		"--name=prometheus-temperature-disk"
+		"--name=prometheus-temperature-disk",
+		"--privileged"
 	],
 	"customizations": {
 		"vscode": {
 			"settings": {},
 			"extensions": [
-				
+				"golang.go"
 			]
 		}
 	}
