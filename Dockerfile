@@ -3,7 +3,7 @@ FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o prometheus-disk-temp .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o prometheus-temperature-disk .
 
 FROM alpine:3.21
 
@@ -13,6 +13,6 @@ RUN apk add --update --no-cache tzdata \
     && echo $TZ > /etc/timezone
 
 RUN apk add --no-cache smartmontools nvme-cli
-COPY --from=builder /app/prometheus-disk-temp /app/prometheus-disk-temp
+COPY --from=builder /app/prometheus-temperature-disk /app/prometheus-temperature-disk
 EXPOSE 9586
-ENTRYPOINT ["/app/prometheus-disk-temp"]
+ENTRYPOINT ["/app/prometheus-temperature-disk"]
