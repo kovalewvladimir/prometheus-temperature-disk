@@ -7,6 +7,10 @@
 - smartmontools (для работы с S.M.A.R.T)
 - Docker (опционально)
 
+## Пример метрик
+
+![Пример метрик в Prometheus](prometheus-metrics-example.png)
+
 ## Установка
 
 ### Без Docker
