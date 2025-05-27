@@ -15,4 +15,4 @@ RUN apk add --update --no-cache tzdata \
 RUN apk add --no-cache smartmontools nvme-cli
 COPY --from=builder /app/prometheus-disk-temp /app/prometheus-disk-temp
 EXPOSE 9586
-CMD ["/app/prometheus-disk-temp"]
+ENTRYPOINT ["/app/prometheus-disk-temp"]
