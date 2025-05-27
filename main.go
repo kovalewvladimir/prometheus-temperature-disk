@@ -11,13 +11,37 @@ import (
 	"strings"
 )
 
+var excludedDevicesList []string
+
 type SmartctlOutput struct {
 	Temperature struct {
 		Current int `json:"current"`
 	} `json:"temperature"`
 }
 
+func init() {
+	if excluded := os.Getenv("EXCLUDED_DEVICES"); excluded != "" {
+		excludedDevicesList = strings.Split(excluded, ",")
+		for i, device := range excludedDevicesList {
+			excludedDevicesList[i] = strings.TrimSpace(device)
+		}
+	}
+}
+
+func isExcludedDevice(name string) bool {
+	for _, device := range excludedDevicesList {
+		if device == name {
+			return true
+		}
+	}
+	return false
+}
+
 func isValidDiskDevice(name string) bool {
+	if isExcludedDevice(name) {
+		return false
+	}
+
 	// Проверяем тип устройства
 	isSataDevice := strings.HasPrefix(name, "sd") && !strings.HasPrefix(name, "sdz")
 	isNvmeDevice := strings.HasPrefix(name, "nvme")
@@ -75,6 +99,11 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	excludedDevices := os.Getenv("EXCLUDED_DEVICES")
+	if excludedDevices != "" {
+		log.Printf("Excluded devices: %s", excludedDevices)
+	}
+
 	devices := getDevices()
 	if len(devices) == 0 {
 		log.Fatal("Error: No devices found in /dev directory")
