@@ -18,14 +18,17 @@ type SmartctlOutput struct {
 }
 
 func isValidDiskDevice(name string) bool {
-	// Проверяем, что устройство не является разделом (нет цифр в конце)
-	hasNoDigitSuffix := !strings.ContainsAny(name[len(name)-1:], "0123456789")
-
 	// Проверяем тип устройства
 	isSataDevice := strings.HasPrefix(name, "sd") && !strings.HasPrefix(name, "sdz")
 	isNvmeDevice := strings.HasPrefix(name, "nvme")
 
-	return hasNoDigitSuffix && (isSataDevice || isNvmeDevice)
+	if isSataDevice {
+		// Проверяем, что SATA устройство не является разделом (нет цифр в конце)
+		hasNoDigitSuffix := !strings.ContainsAny(name[len(name)-1:], "0123456789")
+		return hasNoDigitSuffix
+	}
+
+	return isNvmeDevice
 }
 
 func getDevices() []string {
