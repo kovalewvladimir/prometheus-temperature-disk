@@ -82,11 +82,7 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 	for _, device := range deviceList {
 		devicePath := filepath.Join("/dev", device)
 		cmd := exec.Command("smartctl", "-n", "standby", "-a", "-j", devicePath)
-		output, err := cmd.Output()
-		if err != nil {
-			log.Printf("Error executing smartctl for device %s: %v", devicePath, err)
-			continue
-		}
+		output, _ := cmd.Output()
 
 		var data SmartctlOutput
 		if err := json.Unmarshal(output, &data); err != nil {
