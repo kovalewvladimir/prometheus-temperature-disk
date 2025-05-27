@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -17,26 +17,43 @@ type SmartctlOutput struct {
 	} `json:"temperature"`
 }
 
-var (
-	devices   string
-	deviceDir string
-)
+func isValidDiskDevice(name string) bool {
+	// Проверяем, что устройство не является разделом (нет цифр в конце)
+	hasNoDigitSuffix := !strings.ContainsAny(name[len(name)-1:], "0123456789")
 
-func init() {
-	flag.StringVar(&devices, "devices", "", "Comma-separated list of devices to monitor (e.g., sda,sdb,sdc)")
-	flag.StringVar(&deviceDir, "device-dir", "/dev", "Directory containing device files")
+	// Проверяем тип устройства
+	isSataDevice := strings.HasPrefix(name, "sd") && !strings.HasPrefix(name, "sdz")
+	isNvmeDevice := strings.HasPrefix(name, "nvme")
+
+	return hasNoDigitSuffix && (isSataDevice || isNvmeDevice)
+}
+
+func getDevices() []string {
+	entries, err := os.ReadDir("/dev")
+	if err != nil {
+		log.Printf("Error reading /dev directory: %v", err)
+		return nil
+	}
+
+	var devices []string
+	for _, entry := range entries {
+		name := entry.Name()
+		if isValidDiskDevice(name) {
+			devices = append(devices, name)
+		}
+	}
+	return devices
 }
 
 func metrics(w http.ResponseWriter, r *http.Request) {
-	deviceList := strings.Split(devices, ",")
-	
+	deviceList := getDevices()
+
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "# HELP disk_temperature_celsius Current temperature of the disk\n")
 	fmt.Fprintf(w, "# TYPE disk_temperature_celsius gauge\n")
-	
+
 	for _, device := range deviceList {
-		device = strings.TrimSpace(device)
-		devicePath := filepath.Join(deviceDir, device)
+		devicePath := filepath.Join("/dev", device)
 		cmd := exec.Command("smartctl", "-n", "standby", "-a", "-j", devicePath)
 		output, err := cmd.Output()
 		if err != nil {
@@ -55,13 +72,12 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	flag.Parse()
-	
-	if devices == "" {
-		log.Fatal("Error: -devices parameter is required. Please specify comma-separated list of devices to monitor")
+	devices := getDevices()
+	if len(devices) == 0 {
+		log.Fatal("Error: No devices found in /dev directory")
 	}
-	
-	log.Printf("Starting server with devices: %s (in directory: %s)", devices, deviceDir)
+
+	log.Printf("Starting server with detected devices: %s", strings.Join(devices, ", "))
 	http.HandleFunc("/metrics", metrics)
 	log.Fatal(http.ListenAndServe("0.0.0.0:9586", nil))
 }
