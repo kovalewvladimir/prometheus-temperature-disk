@@ -6,7 +6,7 @@ RUN apk add --update --no-cache tzdata \
     && echo $TZ > /etc/timezone
 
 RUN apk add --update --no-cache go
-RUN apk add --update --no-cache smartmontools nvme-cli
+RUN apk add --update --no-cache smartmontools
 
 # Set `DEVCONTAINER` environment variable to help with orientation
 RUN apk add --update --no-cache git

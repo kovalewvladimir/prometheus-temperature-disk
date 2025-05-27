@@ -12,7 +12,7 @@ RUN apk add --update --no-cache tzdata \
     && cp /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
-RUN apk add --no-cache smartmontools nvme-cli
+RUN apk add --no-cache smartmontools
 COPY --from=builder /app/prometheus-temperature-disk /app/prometheus-temperature-disk
 EXPOSE 9586
 ENTRYPOINT ["/app/prometheus-temperature-disk"]
