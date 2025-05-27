@@ -1,0 +1,19 @@
+{
+	"name": "Prometheus temperature disk",
+	"build": {
+		"context": "..",
+		"dockerfile": "Dockerfile"
+	},
+	"runArgs": [
+		"-p=9586:9586",
+		"--name=prometheus-temperature-disk"
+	],
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				
+			]
+		}
+	}
+}
