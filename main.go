@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var excludedDevicesList []string
@@ -72,6 +73,29 @@ func getDevices() []string {
 	return devices
 }
 
+func logError(device, errorMsg, output string) {
+	log.Printf("Error parsing JSON for device %s: %s", device, errorMsg)
+
+	errorLogFile := os.Getenv("ERROR_LOG_FILE")
+	if errorLogFile == "" {
+		return
+	}
+
+	f, err := os.OpenFile(errorLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Error opening error log file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	errLog := fmt.Sprintf("[%s] Device: %s, Error: %s, Output: %s\n",
+		time.Now().Format(time.RFC3339), device, errorMsg, output)
+
+	if _, err := f.WriteString(errLog); err != nil {
+		log.Printf("Error writing to error log file: %v", err)
+	}
+}
+
 func metrics(w http.ResponseWriter, r *http.Request) {
 	deviceList := getDevices()
 
@@ -86,7 +110,7 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 
 		var data SmartctlOutput
 		if err := json.Unmarshal(output, &data); err != nil {
-			log.Printf("Error parsing JSON for device %s: %v", devicePath, err)
+			logError(devicePath, err.Error(), string(output))
 			continue
 		}
 
