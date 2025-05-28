@@ -16,8 +16,15 @@ var excludedDevicesList []string
 
 type SmartctlOutput struct {
 	Temperature struct {
-		Current int `json:"current"`
+		Current *int `json:"current"` // используем указатель
 	} `json:"temperature"`
+	Smartctl struct {
+		Messages []struct {
+			String   string `json:"string"`
+			Severity string `json:"severity"`
+		} `json:"messages"`
+		ExitStatus int `json:"exit_status"`
+	} `json:"smartctl"`
 }
 
 func init() {
@@ -102,6 +109,8 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "# HELP disk_temperature_celsius Current temperature of the disk\n")
 	fmt.Fprintf(w, "# TYPE disk_temperature_celsius gauge\n")
+	fmt.Fprintf(w, "# HELP disk_power_mode Current power mode of the disk (1=ACTIVE, 0=STANDBY)\n")
+	fmt.Fprintf(w, "# TYPE disk_power_mode gauge\n")
 
 	for _, device := range deviceList {
 		devicePath := filepath.Join("/dev", device)
@@ -114,7 +123,19 @@ func metrics(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		fmt.Fprintf(w, "disk_temperature_celsius{device=%q,path=%q} %d\n", device, devicePath, data.Temperature.Current)
+		// Определяем состояние питания диска (ACTIVE=1, STANDBY=0)
+		powerMode := 1 // По умолчанию активный режим
+		if data.Smartctl.ExitStatus == 2 {
+			powerMode = 0 // STANDBY режим
+		}
+
+		// Выводим метрику power_mode в любом случае
+		fmt.Fprintf(w, "disk_power_mode{device=%q,path=%q} %d\n", device, devicePath, powerMode)
+
+		// Выводим температуру только если устройство активно и температура доступна
+		if powerMode == 1 && data.Temperature.Current != nil {
+			fmt.Fprintf(w, "disk_temperature_celsius{device=%q,path=%q} %d\n", device, devicePath, *data.Temperature.Current)
+		}
 	}
 }
 
