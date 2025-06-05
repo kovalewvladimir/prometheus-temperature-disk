@@ -1,6 +1,6 @@
 # Prometheus Temperature Disk Exporter
 
-Экспортер для Prometheus, который собирает данные о температуре дисков с помощью smartctl.
+Экспортер для Prometheus, который собирает данные о температуре дисков и их режиме питания с помощью smartctl.
 
 ## Требования
 
@@ -36,6 +36,7 @@ docker run --privileged -p 9586:9586 prometheus-temperature-disk
 ## Метрики
 
 - `disk_temperature_celsius` - температура диска в градусах Цельсия
+- `disk_power_mode` - режим питания диска (1=ACTIVE, 0=STANDBY)
 
 ### Формат метрик
 
@@ -43,7 +44,17 @@ docker run --privileged -p 9586:9586 prometheus-temperature-disk
 # HELP disk_temperature_celsius Current temperature of the disk
 # TYPE disk_temperature_celsius gauge
 disk_temperature_celsius{device="sda",path="/dev/sda"} 35
+
+# HELP disk_power_mode Current power mode of the disk (1=ACTIVE, 0=STANDBY)
+# TYPE disk_power_mode gauge
+disk_power_mode{device="sda",path="/dev/sda"} 1
 ```
+
+## Особенности работы
+
+- Температура диска (`disk_temperature_celsius`) отображается только для дисков в активном режиме (ACTIVE)
+- Режим питания (`disk_power_mode`) отображается для всех поддерживаемых дисков
+- Экспортер не пробуждает диски в режиме ожидания (STANDBY), чтобы не влиять на энергопотребление и срок службы
 
 ## Prometheus конфигурация
 
